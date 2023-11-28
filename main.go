@@ -9,6 +9,9 @@ func main() {
 	PORT := "8080"
 
 	mux := http.NewServeMux()
+
+	mux.Handle("/", http.FileServer(http.Dir(".")))
+
 	corsMux := corsWrapper(mux)
 
 	server := &http.Server{
