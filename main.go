@@ -3,39 +3,31 @@ package main
 import (
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
 	PORT := "8080"
+	router := chi.NewRouter()
+	apiCfg := apiConfig{
+		hits: 0,
+	}
 
-	mux := http.NewServeMux()
+	router.Handle("/app/*", apiCfg.incrementCount(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
+	router.Handle("/app", apiCfg.incrementCount(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	router.Get("/metrics", apiCfg.getCount)
+	router.Get("/reset", apiCfg.resetCount)
+	router.Get("/healthz", healthzHandler)
 
-	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
-	mux.HandleFunc("/healthz", healthzHandler)
-
-	corsMux := corsWrapper(mux)
-
+	corsRouter := corsWrapper(router)
 	server := &http.Server{
 		Addr: ":" + PORT,
-		Handler: corsMux,
+		Handler: corsRouter,
 	}
 
 	log.Printf("Server listening on port: " + PORT)
 	log.Fatal(server.ListenAndServe())
-}
-
-func corsWrapper(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-		} else {
-			next.ServeHTTP(w, r)
-		}
-	})
 }
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
