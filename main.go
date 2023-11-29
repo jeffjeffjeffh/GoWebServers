@@ -9,29 +9,31 @@ import (
 
 func main() {
 	PORT := "8080"
-	router := chi.NewRouter()
 	apiCfg := apiConfig{
 		hits: 0,
 	}
 
+	router := chi.NewRouter()
 	router.Handle("/app/*", apiCfg.incrementCount(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	router.Handle("/app", apiCfg.incrementCount(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	router.Get("/metrics", apiCfg.getCount)
-	router.Get("/reset", apiCfg.resetCount)
-	router.Get("/healthz", healthzHandler)
+
+	apiRouter := chi.NewRouter()
+	apiRouter.Get("/metrics", apiCfg.getCount)
+	apiRouter.Get("/reset", apiCfg.resetCount)
+	apiRouter.Post("/validate_chirp", apiCfg.validateChirp)
+	apiRouter.Get("/healthz", healthzHandler)
+	router.Mount("/api", apiRouter)
+
+	adminRouter := chi.NewRouter()
+	adminRouter.Get("/metrics", apiCfg.adminGetCount)
+	router.Mount("/admin", adminRouter)
 
 	corsRouter := corsWrapper(router)
 	server := &http.Server{
-		Addr: ":" + PORT,
+		Addr:    ":" + PORT,
 		Handler: corsRouter,
 	}
 
 	log.Printf("Server listening on port: " + PORT)
 	log.Fatal(server.ListenAndServe())
-}
-
-func healthzHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
