@@ -17,11 +17,6 @@ type dbFormat struct {
 	Chirps map[int]Chirp `json:"chirps"`
 }
 
-type Chirp struct {
-	ID int `json:"id"`
-	Body string `json:"body"`
-}
-
 func LoadFile(path string) (dbFormat, error) {
 	conn := dbConnection{
 		path: path,
@@ -49,4 +44,8 @@ func loadDB(file []byte) (dbFormat, error) {
 	// fmt.Println(db)
 
 	return db, nil
+}
+
+func createChirp() {
+	
 }

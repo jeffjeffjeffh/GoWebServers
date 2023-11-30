@@ -1,45 +1,33 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-
-	"internal/database"
 )
 
 func main() {
-	db, err := database.LoadFile("./db.json")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	for key, value := range db.Chirps {
-		fmt.Println(key, value.Body, value.ID)
-	}
-
 	PORT := "8080"
 	apiCfg := apiConfig{
 		hits: 0,
 	}
 
 	router := chi.NewRouter()
-	router.Handle("/app/*", apiCfg.incrementCount(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
-	router.Handle("/app", apiCfg.incrementCount(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	fsHandler := apiCfg.handlerIncrementMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir("."))))
+	router.Handle("/app", fsHandler)
+	router.Handle("/app/*", fsHandler)
 
 	apiRouter := chi.NewRouter()
-	apiRouter.Get("/metrics", apiCfg.getCount)
-	apiRouter.Get("/reset", apiCfg.resetCount)
-	apiRouter.Route("/chirps", func(r chi.Router) {
-		r.With(apiCfg.validateChirp).Post("/", apiCfg.createChirp)
-	})
-	apiRouter.Get("/healthz", healthzHandler)
+	apiRouter.Get("/metrics", apiCfg.handlerGetMetrics)
+	apiRouter.Get("/reset", apiCfg.handlerResetMetrics)
+	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
+	apiRouter.Get("/healthz", handlerHealthz)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
-	adminRouter.Get("/metrics", apiCfg.adminGetCount)
+	adminRouter.Get("/metrics", apiCfg.handlerAdminGetMetrics)
 	router.Mount("/admin", adminRouter)
 
 	corsRouter := corsWrapper(router)
