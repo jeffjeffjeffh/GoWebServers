@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -43,74 +43,70 @@ func (cfg *apiConfig) resetCount(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("Hits reset to 0: %v", cfg.hits)))
 }
 
-func (cfg *apiConfig) validateChirp(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Chirp string `json:"body"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-
-	if err != nil {
-		respondWithError(w, err, http.StatusBadRequest)
-		return
-	}
-
-	maxChirpLength := 140
-	if len(params.Chirp) > maxChirpLength {
-		type returnVals struct {
-			Error string `json:"error"`
-		}
-		respBody := returnVals{
-			Error: "Chirp is too long",
-		}
-
-		data, err := json.Marshal(respBody)
-		if err != nil {
-			respondWithError(w, err, http.StatusBadRequest)
-			return
-		}
-
-		respondWithJSON(w, data, http.StatusBadRequest)
-		return
-	}
-
-	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
-	chirpWords := strings.Split(params.Chirp, " ")
-	for i := range chirpWords {
-		for j := range profaneWords {
-			if profaneWords[j] == strings.ToLower(chirpWords[i]) {
-				chirpWords[i] = "****"
-			}
-		}
-	}
-	cleanedWords := strings.Join(chirpWords, " ")
-
-	type returnVals struct {
-			CleanedBody string `json:"cleaned_body"`
-	}
-	respBody := returnVals{
-		CleanedBody: cleanedWords,
-	}
-
-	data, err := json.Marshal(respBody)
-	if err != nil {
-		respondWithError(w, err, http.StatusBadRequest)
-		return
-	}
-
-	respondWithJSON(w, data, http.StatusOK)
+func (cfg *apiConfig) createChirp(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func respondWithError(w http.ResponseWriter, e error, code int) {
-	w.WriteHeader(code)
-	log.Printf("Error marshalling JSON: %s", e)
+func (cfg *apiConfig) validateChirp(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type parameters struct {
+			Chirp string `json:"body"`
+		}
+		params := parameters{}
+
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&params)
+		if err != nil {
+			writeError(w, err, http.StatusBadRequest)
+			return
+		}
+	
+		maxChirpLength := 140
+		if len(params.Chirp) > maxChirpLength {
+			type returnVals struct {
+				Error string `json:"error"`
+			}
+			respBody := returnVals{
+				Error: "Chirp is too long",
+			}
+	
+			data, err := json.Marshal(respBody)
+			if err != nil {
+				writeError(w, err, http.StatusBadRequest)
+				return
+			}
+	
+			writeJSON(w, data, http.StatusBadRequest)
+			return
+		}
+	
+		profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
+		chirpWords := strings.Split(params.Chirp, " ")
+		cleanedWords := []string{}
+		
+		for i := range chirpWords {
+			if slices.Contains(profaneWords, chirpWords[i]) {
+				cleanedWords = append(cleanedWords, "****")
+				} else {
+				cleanedWords = append(cleanedWords, chirpWords[i])
+			}
+		}
+
+		type returnVals struct {
+				CleanedBody string `json:"cleaned_body"`
+		}
+		respBody := returnVals{
+			CleanedBody: strings.Join(cleanedWords, " "),
+		}
+	
+		data, err := json.Marshal(respBody)
+		if err != nil {
+			writeError(w, err, http.StatusBadRequest)
+			return
+		}
+	
+		writeJSON(w, data, http.StatusOK)
+		next.ServeHTTP(w, r)
+	})
 }
 
-func respondWithJSON(w http.ResponseWriter, data []byte, code int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(data)
-}
