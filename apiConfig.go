@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type apiConfig struct {
@@ -52,53 +53,64 @@ func (cfg *apiConfig) validateChirp(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 
 	if err != nil {
-		log.Printf("Error decoding paramaters: %s", err)
-		w.WriteHeader(http.StatusBadRequest)
+		respondWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	maxChirpLength := 140
-
 	if len(params.Chirp) > maxChirpLength {
-		w.WriteHeader(http.StatusBadRequest)
-		
 		type returnVals struct {
 			Error string `json:"error"`
 		}
-
 		respBody := returnVals{
 			Error: "Chirp is too long",
 		}
 
 		data, err := json.Marshal(respBody)
-
 		if err != nil {
-			log.Printf("Error marshalling JSON: %s", err)
+			respondWithError(w, err, http.StatusBadRequest)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
+		respondWithJSON(w, data, http.StatusBadRequest)
 		return
 	}
 
-	type returnVals struct {
-			Valid bool `json:"valid"`
+	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
+	chirpWords := strings.Split(params.Chirp, " ")
+	for i := range chirpWords {
+		for j := range profaneWords {
+			if profaneWords[j] == strings.ToLower(chirpWords[i]) {
+				chirpWords[i] = "****"
+			}
+		}
 	}
+	cleanedWords := strings.Join(chirpWords, " ")
 
+	type returnVals struct {
+			CleanedBody string `json:"cleaned_body"`
+	}
 	respBody := returnVals{
-		Valid: true,
+		CleanedBody: cleanedWords,
 	}
 
 	data, err := json.Marshal(respBody)
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Error marshalling JSON: %s", err)
+		respondWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
+	respondWithJSON(w, data, http.StatusOK)
+	return
+}
+
+func respondWithError(w http.ResponseWriter, e error, code int) {
+	w.WriteHeader(code)
+	log.Printf("Error marshalling JSON: %s", e)
+}
+
+func respondWithJSON(w http.ResponseWriter, data []byte, code int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(code)
 	w.Write(data)
 }
