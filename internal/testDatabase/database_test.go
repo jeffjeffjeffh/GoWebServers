@@ -12,7 +12,7 @@ func TestWriteChirp(t *testing.T) {
 
 	testChirp := "This is the first chirp ever!"
 
-	err = db.CreateChirp(testChirp)
+	_, err = db.CreateChirp(testChirp)
 	if err != nil {		
 		t.Error(err)
 	}

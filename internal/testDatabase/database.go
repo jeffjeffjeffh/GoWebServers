@@ -3,6 +3,7 @@ package testDatabase
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -22,25 +23,26 @@ type Chirp struct{
 }
 
 func NewDB(filename string) (*DB, error) {
-	db := DB{
+	db := &DB{
 		path: filename,
 		mutex: &sync.RWMutex{},
 	}
 
 	err := db.ensureDB()
-	if err != nil {
-		return nil, nil
-	}
 
-	return &db, nil
+	return db, err
 }
 
 func (db *DB) ensureDB() error {
-	_, err := os.ReadFile(db.path)
-	if errors.Is(err, os.ErrNotExist) {
+	file, err := os.ReadFile(db.path)
+	if errors.Is(err, os.ErrNotExist) || len(file) == 0 {
+		fmt.Println("db file does not exist or is empty. creating new file...")
 		return db.initialize()
 	}
-	return nil
+	if err == nil {
+		fmt.Println("db file found.")
+	}
+	return err
 }
 
 func (db *DB) initialize() error {
@@ -50,11 +52,15 @@ func (db *DB) initialize() error {
 	return db.writeDB(dbStructure)
 }
 
-func (db *DB) CreateChirp(chirp string) error {
+func (db *DB) CreateChirp(chirp string) (Chirp, error) {
+	fmt.Println("creating chirp...")
+
 	dbStructure, err := db.loadDB()
 	if err != nil {
-		return err
+		return Chirp{}, err
 	}
+
+	fmt.Println("db loaded.")
 	
 	newId := len(dbStructure.Chirps) + 1
 	newChirp := Chirp{
@@ -62,9 +68,11 @@ func (db *DB) CreateChirp(chirp string) error {
 		ID: newId,
 	}
 
+	fmt.Printf("new chirp created: %s, %d\n", newChirp.Body, newChirp.ID)
+
 	dbStructure.Chirps[newId] = newChirp
 
-	return db.writeDB(dbStructure)
+	return newChirp, db.writeDB(dbStructure)
 }
 
 // takes a dbStructure already loaded from CreateChirp
@@ -97,6 +105,9 @@ func (db *DB) loadDB() (DBstructure, error) {
 	
 	dbStructure := DBstructure{}
 	err = json.Unmarshal(data, &dbStructure)
+	if err != nil {
+		return DBstructure{}, err
+	}
 
 	return dbStructure, nil
 }

@@ -1,17 +1,30 @@
 package main
 
 import (
-	// "fmt"
+	"internal/testDatabase"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
+type apiConfig struct {
+	hits int
+	db *testDatabase.DB
+}
+
 func main() {
 	PORT := "8080"
+	DB_FILE := "database.json"
+
+	db, err := testDatabase.NewDB(DB_FILE)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	apiCfg := apiConfig{
 		hits: 0,
+		db: db,
 	}
 
 	router := chi.NewRouter()

@@ -1,20 +1,20 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"slices"
+	"strings"
 )
 
-type Chirp struct {
+type Chirp struct{
 	ID int `json:"id"`
 	Body string `json:"body"`
 }
 
-func decodeParams(r *http.Request) (parameters, error) {
-	params := parameters{}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&params)
-	return params, err
+type returnErrorVals struct{
+	Error string `json:"error"`
 }
 
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
@@ -24,31 +24,58 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	validatedChirp, err := validateChirpLength(params.Chirp)
+	err = validateChirpLength(*params.Chirp)
 	if err != nil {
-		type returnVals struct {
-				Error string `json:"error"`
-			}
-			respBody := returnVals{
-				Error: "Chirp is too long",
-			}
-			
-		writeJSON(w, respBody, http.StatusBadRequest)
-	}
-}
+		respBody := returnErrorVals{
+			Error: "Chirp is too long",
+		}
 
-func validateChirpLength(text string) (Chirp, error) {
-		maxChirpLength := 140
-		if len(text) > maxChirpLength {
-			
-	
-			data, err := json.Marshal(respBody)
-			if err != nil {
-				writeError(w, err, http.StatusInternalServerError)
-				return
-			}
-	
-			writeJSON(w, data, http.StatusBadRequest)
+		data, err := json.Marshal(respBody)
+		if err != nil {
+			writeError(w, err, http.StatusInternalServerError)
 			return
 		}
+			
+		writeJSON(w, data, http.StatusBadRequest)
+		return
+	}
+
+	cleanedChirp := cleanChirp(*params.Chirp)
+
+	createdChirp, err := cfg.db.CreateChirp(cleanedChirp)
+	if err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(createdChirp)
+	if err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+	}
+
+	writeJSON(w, data, http.StatusCreated)
+}
+
+func validateChirpLength(text string) error {
+		maxChirpLength := 140
+		if len(text) > maxChirpLength {
+			return errors.New("chirp length exceeds 140 characters")
+		}
+		return nil
+}
+
+func cleanChirp(chirp string) string {
+	profaneWords := []string{"kerfuffle", "sharbert", "fornax"}
+	chirpWords := strings.Split(chirp, " ")
+	cleanedWords := []string{}
+	
+	for i := range chirpWords {
+		if slices.Contains(profaneWords, chirpWords[i]) {
+			cleanedWords = append(cleanedWords, "****")
+			} else {
+			cleanedWords = append(cleanedWords, chirpWords[i])
+		}
+	}
+
+	return strings.Join(cleanedWords, " ")
 }
