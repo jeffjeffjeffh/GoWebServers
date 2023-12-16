@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -53,6 +54,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		writeError(w, err, http.StatusInternalServerError)
 	}
 
+	fmt.Println("chirp created, sending response!")
 	writeJSON(w, data, http.StatusCreated)
 }
 

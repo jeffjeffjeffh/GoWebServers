@@ -75,6 +75,20 @@ func (db *DB) CreateChirp(chirp string) (Chirp, error) {
 	return newChirp, db.writeDB(dbStructure)
 }
 
+func (db *DB) ListChirps() ([]Chirp, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return []Chirp{}, err
+	}
+
+	chirps := []Chirp{}
+	for _, val := range dbStructure.Chirps {
+		chirps = append(chirps, val)
+	}
+
+	return chirps, nil
+}
+
 // takes a dbStructure already loaded from CreateChirp
 func (db *DB) writeDB(dbStructure DBstructure) error {
 	db.mutex.Lock()

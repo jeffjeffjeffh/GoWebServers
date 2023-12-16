@@ -12,5 +12,6 @@ func writeError(w http.ResponseWriter, err error, code int) {
 
 func writeJSON(w http.ResponseWriter, data []byte, code int) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(data)
 }
