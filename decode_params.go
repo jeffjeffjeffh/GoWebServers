@@ -28,6 +28,7 @@ func decodeChirpParams(r *http.Request) (chirpParams, error) {
 type userParams struct{
 	Email *string `json:"email"`
 	Password *string `json:"password"`
+	Expiration *int `json:"expires_in_seconds"`
 }
 
 func decodeUserParams(r *http.Request) (userParams, error) {

@@ -11,7 +11,6 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, err, http.StatusInternalServerError)
 	}
-
 	log.Println("login params decoded")
 
 	user, err := cfg.db.Login(*params.Email, *params.Password)
@@ -27,7 +26,6 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
-
 
 	userResp := userResponse{
 		Email: user.Email,

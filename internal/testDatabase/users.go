@@ -49,14 +49,12 @@ func (db *DB) Login(email, password string) (User, error) {
 	if !ok {
 		return User{}, errors.New("user not found")
 	}
-
 	log.Println("user found")
 
 	err := bcrypt.CompareHashAndPassword(user.Password, []byte(password))
 	if err != nil {
 		return User{}, errors.New("wrong password")
 	}
-
 	log.Println("password verified")
 
 	return user, nil

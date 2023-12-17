@@ -2,30 +2,36 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"internal/testDatabase"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 )
 
 type apiConfig struct {
 	hits int
 	db *testDatabase.DB
+	jwtSecret string
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	PORT := "8080"
 	DB_FILE := "database.json"
 	apiCfg := apiConfig{
 		hits: 0,
+		jwtSecret: os.Getenv("JWT_SECRET"),
 	}
-	
+
 	debugDB := flag.Bool("debug", false, "when set to true, will create a new database.json on every restart")
 	flag.Parse()
-
-	fmt.Println(*debugDB)
 
 	if *debugDB {
 		db, err := testDatabase.CreateDB(DB_FILE)
