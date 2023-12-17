@@ -19,13 +19,13 @@ type returnErrorVals struct{
 }
 
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
-	params, err := decodeParams(r)
+	params, err := decodeChirpParams(r)
 	if err != nil {
 		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	err = validateChirpLength(*params.Chirp)
+	err = validateChirpLength(*params.Body)
 	if err != nil {
 		respBody := returnErrorVals{
 			Error: "Chirp is too long",
@@ -41,7 +41,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	cleanedChirp := cleanChirp(*params.Chirp)
+	cleanedChirp := cleanChirp(*params.Body)
 
 	createdChirp, err := cfg.db.CreateChirp(cleanedChirp)
 	if err != nil {

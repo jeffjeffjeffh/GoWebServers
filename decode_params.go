@@ -6,20 +6,39 @@ import (
 	"net/http"
 )
 
-type parameters struct{
-	Chirp *string `json:"body"`
+type chirpParams struct{
+	Body *string `json:"body"`
 }
 
-func decodeParams(r *http.Request) (parameters, error) {
-	params := parameters{}
+func decodeChirpParams(r *http.Request) (chirpParams, error) {
+	params := chirpParams{}
 	decoder := json.NewDecoder(r.Body)
 	
 	err := decoder.Decode(&params)
-	if params.Chirp == nil {
-		return parameters{}, errors.New("invalid POST request; no body found")
+	if params.Body == nil {
+		return chirpParams{}, errors.New("invalid POST request; no body found")
 	}
 	if err != nil {
-		return parameters{}, err
+		return chirpParams{}, err
+	}
+
+	return params, err
+}
+
+type userParams struct{
+	Email *string `json:"email"`
+}
+
+func decodeUserParams(r *http.Request) (userParams, error) {
+	params := userParams{}
+	decoder := json.NewDecoder(r.Body)
+	
+	err := decoder.Decode(&params)
+	if params.Email == nil {
+		return userParams{}, errors.New("invalid POST request; no body found")
+	}
+	if err != nil {
+		return userParams{}, err
 	}
 
 	return params, err

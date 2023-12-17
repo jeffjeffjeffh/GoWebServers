@@ -15,11 +15,17 @@ type DB struct {
 
 type DBstructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
+	Users map[int]User `json:"users"`
 }
 
 type Chirp struct{
 	ID int `json:"id"`
 	Body string `json:"body"`
+}
+
+type User struct{
+	Email string `json:"email"`
+	ID int `json:"id"`
 }
 
 func NewDB(filename string) (*DB, error) {
@@ -48,31 +54,40 @@ func (db *DB) ensureDB() error {
 func (db *DB) initialize() error {
 	dbStructure := DBstructure{
 		Chirps: map[int]Chirp{},
+		Users: map[int]User{},
 	}
 	return db.writeDB(dbStructure)
 }
 
 func (db *DB) CreateChirp(chirp string) (Chirp, error) {
-	fmt.Println("creating chirp...")
-
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return Chirp{}, err
 	}
 
-	fmt.Println("db loaded.")
-	
 	newId := len(dbStructure.Chirps) + 1
 	newChirp := Chirp{
 		Body: chirp,
 		ID: newId,
 	}
 
-	fmt.Printf("new chirp created: %s, %d\n", newChirp.Body, newChirp.ID)
-
 	dbStructure.Chirps[newId] = newChirp
 
 	return newChirp, db.writeDB(dbStructure)
+}
+
+func (db *DB) GetChirp(id int) (Chirp, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return Chirp{}, err
+	}
+
+	chirp, ok := dbStructure.Chirps[id]
+	if !ok {
+		return Chirp{}, errors.New("chirp not found")
+	}
+
+	return chirp, nil
 }
 
 func (db *DB) ListChirps() ([]Chirp, error) {
@@ -87,6 +102,23 @@ func (db *DB) ListChirps() ([]Chirp, error) {
 	}
 
 	return chirps, nil
+}
+
+func (db *DB) CreateUser(email string) (User, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	newId := len(dbStructure.Users) + 1
+	user := User{
+		ID: newId,
+		Email: email,
+	}
+
+	dbStructure.Users[newId] = user
+
+	return user, db.writeDB(dbStructure)
 }
 
 // takes a dbStructure already loaded from CreateChirp

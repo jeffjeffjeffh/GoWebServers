@@ -36,8 +36,10 @@ func main() {
 	apiRouter.Get("/metrics", apiCfg.handlerGetMetrics)
 	apiRouter.Get("/reset", apiCfg.handlerResetMetrics)
 	apiRouter.Get("/chirps", apiCfg.handlerChirpsList)
+	apiRouter.Get("/chirps/{id}", apiCfg.handlerChirpsGet)
 	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
 	apiRouter.Get("/healthz", handlerHealthz)
+	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
