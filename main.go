@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"internal/testDatabase"
 	"log"
 	"net/http"
@@ -16,15 +18,27 @@ type apiConfig struct {
 func main() {
 	PORT := "8080"
 	DB_FILE := "database.json"
-
-	db, err := testDatabase.NewDB(DB_FILE)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	apiCfg := apiConfig{
 		hits: 0,
-		db: db,
+	}
+	
+	debugDB := flag.Bool("debug", false, "when set to true, will create a new database.json on every restart")
+	flag.Parse()
+
+	fmt.Println(*debugDB)
+
+	if *debugDB {
+		db, err := testDatabase.CreateDB(DB_FILE)
+		if err != nil {
+			log.Fatal(err)
+		}
+		apiCfg.db = db
+	} else {
+		db, err := testDatabase.LoadDB(DB_FILE)
+		if err != nil {
+			log.Fatal(err)
+		}
+		apiCfg.db = db
 	}
 
 	router := chi.NewRouter()
