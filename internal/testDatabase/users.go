@@ -57,8 +57,11 @@ func (db *DB) Login(email, password string) (User, error) {
 	}
 	log.Println("password verified")
 
+
 	return user, nil
 }
+
+
 
 func (db *DB) findUserByEmail(email string) (User, bool) {
 	dbStruct, err := db.loadDB()
