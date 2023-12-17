@@ -5,14 +5,11 @@ import (
 )
 
 func TestWriteChirp(t *testing.T) {
-	db, err := NewDB("database.json")
-	if err != nil {
-		t.Error(err)
-	}
+	db := newDB("database.json")
 
 	testChirp := "This is the first chirp ever!"
 
-	_, err = db.CreateChirp(testChirp)
+	_, err := db.CreateChirp(testChirp)
 	if err != nil {		
 		t.Error(err)
 	}

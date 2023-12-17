@@ -1,13 +1,29 @@
 package main
 
 import (
-	"log"
+	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
+type resError struct{
+	Error string `json:"error"`
+}
+
 func writeError(w http.ResponseWriter, err error, code int) {
 	w.WriteHeader(code)
-	log.Printf("Error marshalling JSON: %s", err)
+
+	resBody := resError{
+		Error: err.Error(),
+	}
+
+	data, err := json.Marshal(resBody)
+	if err != nil {
+		fmt.Println("errception")
+		return
+	}
+
+	w.Write(data)
 }
 
 func writeJSON(w http.ResponseWriter, data []byte, code int) {

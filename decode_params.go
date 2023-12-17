@@ -27,6 +27,7 @@ func decodeChirpParams(r *http.Request) (chirpParams, error) {
 
 type userParams struct{
 	Email *string `json:"email"`
+	Password *string `json:"password"`
 }
 
 func decodeUserParams(r *http.Request) (userParams, error) {
@@ -35,7 +36,10 @@ func decodeUserParams(r *http.Request) (userParams, error) {
 	
 	err := decoder.Decode(&params)
 	if params.Email == nil {
-		return userParams{}, errors.New("invalid POST request; no body found")
+		return userParams{}, errors.New("invalid POST request; no user email found")
+	}
+	if params.Password == nil {
+		return userParams{}, errors.New("invalid POST request; no user password found")
 	}
 	if err != nil {
 		return userParams{}, err
