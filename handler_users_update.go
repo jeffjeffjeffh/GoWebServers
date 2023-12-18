@@ -73,13 +73,17 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 
 func (cfg *apiConfig) validateUser(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
 	reqToken := r.Header.Get("Authorization")
-	if reqToken == "" {
-		return nil, errors.New("no auth header included in request")
+	if len(reqToken) == 0 {
+		err := errors.New("no auth header included in request")
+		writeError(w, err, http.StatusUnauthorized)
+		return nil, err
 	}
 
 	strippedToken := reqToken[strings.Index(reqToken, " ")+1:]
 	if strippedToken == "" {
-		return nil, errors.New("malformed authorization header")
+		err := errors.New("malformed authorization header")
+		writeError(w, err, http.StatusUnauthorized)
+		return nil, err
 	}
 
 	claims := jwt.RegisteredClaims{}
@@ -93,8 +97,9 @@ func (cfg *apiConfig) validateUser(w http.ResponseWriter, r *http.Request) (*jwt
 
 	tokenIsValid := parsedToken.Valid
 	if !tokenIsValid {
-		log.Println("invalid token, permissions denied")
-		writeJSON(w, []byte("invalid authorization token"), http.StatusUnauthorized)
+		err := errors.New("invalid authorization token")
+		log.Println("invalid authorization token")
+		writeError(w, err, http.StatusUnauthorized)
 		return nil, err
 	}
 	

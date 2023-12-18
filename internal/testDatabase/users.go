@@ -26,7 +26,7 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 
 	newId := len(dbStructure.Users) + 1
 
-	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 4)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 4)
 	if err != nil {
 		return User{}, err
 	}
@@ -34,7 +34,7 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	user := User{
 		ID:       newId,
 		Email:    email,
-		Password: hasedPassword,
+		Password: hashedPassword,
 	}
 
 	dbStructure.Users[newId] = user
@@ -48,9 +48,14 @@ func (db *DB) UpdateUser(email, password string, id int) (User, error) {
 		return User{}, err
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 4)
+	if err != nil {
+		return User{}, err
+	}
+
 	newUser := User{
 		Email: email,
-		Password: []byte(password),
+		Password: []byte(hashedPassword),
 		ID: id,
 	}
 
