@@ -14,6 +14,7 @@ type userLoginResponse struct{
 	Email string `json:"email"`
 	ID int `json:"id"`
 	Token string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
@@ -38,19 +39,30 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expiration := validateExpiration(params.Expiration)
-
-	newToken := cfg.generateJwt(user.ID, expiration)
-	signedString, err := newToken.SignedString([]byte(cfg.jwtSecret))
+	newToken := cfg.generateJwt(user.ID, expiration, "chirpy-access")
+	signedToken, err := newToken.SignedString([]byte(cfg.jwtSecret))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		writeError(w, err, http.StatusInternalServerError)
+		return
 	}
 
-	log.Println("token generated")
+	REFRESH_EXPIRATION := time.Hour * time.Duration(24 * 60)
+	newRefreshToken := cfg.generateJwt(user.ID, REFRESH_EXPIRATION, "chirpy-refresh")
+	signedRefreshToken, err := newRefreshToken.SignedString([]byte(cfg.jwtSecret))
+	if err != nil {
+		log.Println(err)
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("tokens generated")
 
 	userResp := userLoginResponse{
 		Email: user.Email,
 		ID: user.ID,
-		Token: signedString,
+		Token: signedToken,
+		RefreshToken: signedRefreshToken,
 	}
 
 	data, err := json.Marshal(userResp)
@@ -63,8 +75,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 func validateExpiration(expInSeconds *int) time.Duration {
 	var expiration time.Duration
-	if expInSeconds == nil || time.Duration(*expInSeconds) > time.Duration(time.Hour * 24) {
-		expiration = time.Hour * time.Duration(24)
+	if expInSeconds == nil || time.Duration(*expInSeconds) > time.Duration(time.Hour) {
+		expiration = time.Hour
 	} else {
 		expiration = time.Duration(*expInSeconds) * time.Second
 	}
@@ -72,11 +84,11 @@ func validateExpiration(expInSeconds *int) time.Duration {
 	return expiration
 }
 
-func (cfg *apiConfig) generateJwt(id int, expiration time.Duration) *jwt.Token {
+func (cfg *apiConfig) generateJwt(id int, expiration time.Duration, tokenType string) *jwt.Token {
 	now := time.Now().UTC()
 
 	claims := jwt.RegisteredClaims{
-		Issuer: "chirpy",
+		Issuer: tokenType,
 		IssuedAt: jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
 		Subject: fmt.Sprint(id),
