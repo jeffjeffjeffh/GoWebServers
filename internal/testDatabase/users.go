@@ -42,6 +42,34 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	return user, db.writeDB(dbStructure)
 }
 
+func (db *DB) UpdateUser(email, password string, id int) (User, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	newUser := User{
+		Email: email,
+		Password: []byte(password),
+		ID: id,
+	}
+
+	_, ok := dbStructure.Users[id]
+	if !ok {
+		log.Println("user id not found in database")
+		return User{}, errors.New("id not found")
+	}
+
+	dbStructure.Users[id] = newUser
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return User{}, err
+	}
+
+	return newUser, nil
+}
+
 func (db *DB) Login(email, password string) (User, error) {
 	log.Println("attempting login")
 
@@ -60,8 +88,6 @@ func (db *DB) Login(email, password string) (User, error) {
 
 	return user, nil
 }
-
-
 
 func (db *DB) findUserByEmail(email string) (User, bool) {
 	dbStruct, err := db.loadDB()

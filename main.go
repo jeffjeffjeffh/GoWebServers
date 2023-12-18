@@ -60,6 +60,7 @@ func main() {
 	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
 	apiRouter.Get("/healthz", handlerHealthz)
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
+	apiRouter.Put("/users", apiCfg.handlerUsersUpdate)
 	apiRouter.Post("/login", apiCfg.handlerLogin)
 	router.Mount("/api", apiRouter)
 
