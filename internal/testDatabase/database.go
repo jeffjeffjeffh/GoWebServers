@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"time"
 )
 
 type DB struct {
@@ -13,8 +14,9 @@ type DB struct {
 }
 
 type DBstructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users map[int]User `json:"users"`
+	Chirps map[int]Chirp
+	Users map[int]User
+	Tokens map[string]time.Time
 }
 
 func newDB(filename string) *DB {
@@ -82,4 +84,18 @@ func (db *DB) loadDB() (DBstructure, error) {
 	}
 
 	return dbStructure, nil
+}
+
+func (db *DB) CheckTokenStatus(tokenStr string) (bool, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := dbStructure.Tokens[tokenStr]
+	if ok {
+		return true, nil
+	}
+
+	return false, nil
 }

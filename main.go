@@ -53,15 +53,20 @@ func main() {
 	router.Handle("/app/*", fsHandler)
 
 	apiRouter := chi.NewRouter()
-	apiRouter.Get("/metrics", apiCfg.handlerGetMetrics)
-	apiRouter.Get("/reset", apiCfg.handlerResetMetrics)
+
 	apiRouter.Get("/chirps", apiCfg.handlerChirpsList)
 	apiRouter.Get("/chirps/{id}", apiCfg.handlerChirpsGet)
-	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
 	apiRouter.Get("/healthz", handlerHealthz)
+	apiRouter.Get("/metrics", apiCfg.handlerGetMetrics)
+	apiRouter.Get("/reset", apiCfg.handlerResetMetrics)
+
+	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
+	apiRouter.Post("/login", apiCfg.handlerLogin)
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
 	apiRouter.Put("/users", apiCfg.handlerUsersUpdate)
-	apiRouter.Post("/login", apiCfg.handlerLogin)
+	
+	apiRouter.Post("/refresh", apiCfg.handlerRefreshToken)
+	
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()

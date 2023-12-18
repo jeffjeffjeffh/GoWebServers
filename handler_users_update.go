@@ -95,6 +95,18 @@ func (cfg *apiConfig) validateUser(w http.ResponseWriter, r *http.Request) (*jwt
 		return nil, err
 	}
 
+	tokenType, err := parsedToken.Claims.GetIssuer()
+	if err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+		return nil, err
+	}
+	
+	if tokenType == "chirpy-refresh" {
+		err := errors.New("received refresh token, expected other type")
+		writeError(w, err, http.StatusUnauthorized)
+		return nil, err
+	}
+
 	tokenIsValid := parsedToken.Valid
 	if !tokenIsValid {
 		err := errors.New("invalid authorization token")
