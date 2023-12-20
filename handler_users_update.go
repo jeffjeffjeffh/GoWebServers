@@ -2,13 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"internal/auth"
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type userUpdateResponse struct{
@@ -17,9 +13,9 @@ type userUpdateResponse struct{
 }
 
 func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request) {
-	token, err := cfg.authenticateUser(w, r)
+	token, _, err := authenticateUser(r, "chirpy-access", cfg.jwtSecret)
 	if err != nil {
-		// error is already logged and written to the response
+		writeError(w, err, http.StatusUnauthorized)
 		return
 	}
 
@@ -70,42 +66,3 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, data, http.StatusOK)
 }
 
-func (cfg *apiConfig) authenticateUser(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
-	authString, err := auth.GetAuthString(r)
-	if err != nil {
-		log.Println(err)
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-
-	parsedToken, err := auth.ParseToken(authString, cfg.jwtSecret)
-	if err != nil {
-		log.Println(err)
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-
-	tokenType, err := parsedToken.Claims.GetIssuer()
-	if err != nil {
-		log.Println(err)
-		writeError(w, err, http.StatusInternalServerError)
-		return nil, err
-	}
-	
-	if tokenType == "chirpy-refresh" {
-		err := errors.New("received refresh token, expected other type")
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-
-	tokenIsValid := parsedToken.Valid
-	if !tokenIsValid {
-		err := errors.New("invalid authorization token")
-		log.Println("invalid authorization token")
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-	
-	log.Println("user authenticated")
-	return parsedToken, nil
-}

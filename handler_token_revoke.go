@@ -39,5 +39,5 @@ func (cfg *apiConfig) handlerTokenRevoke(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSON(w, nil, http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }

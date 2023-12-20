@@ -1,7 +1,6 @@
 package main
 
 import (
-	"auth"
 	"encoding/json"
 	"errors"
 	"log"
@@ -46,23 +45,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 
 	cleanedChirp := cleanChirp(*params.Body)
 
-	token, err := auth.GetTokenFromRequest(r, cfg.jwtSecret)
-	if err != nil {
-		if err.Error() == "malformed auth header" {
-			writeError(w, err, http.StatusBadRequest)
-		} else {
-			writeError(w, err, http.StatusUnauthorized)		
-		}
-		return
-	}
-
-	tokenIsValid := token.Valid
-	if !tokenIsValid {
-		err := errors.New("token expired or invalid")
-		log.Println(err)
-		writeError(w, err, http.StatusUnauthorized)
-		return
-	}
+	token, _, err := authenticateUser(r, "chirpy-access", cfg.jwtSecret)
 
 	idString, err := token.Claims.GetSubject()
 	if err != nil {

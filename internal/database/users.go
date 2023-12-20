@@ -14,7 +14,7 @@ type User struct {
 }
 
 func (db *DB) CreateUser(email, password string) (User, error) {
-	dbStructure, err := db.loadDB()
+	dbStructure, err := db.load()
 	if err != nil {
 		return User{}, err
 	}
@@ -43,7 +43,7 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 }
 
 func (db *DB) UpdateUser(email, password string, id int) (User, error) {
-	dbStructure, err := db.loadDB()
+	dbStructure, err := db.load()
 	if err != nil {
 		return User{}, err
 	}
@@ -95,7 +95,7 @@ func (db *DB) Login(email, password string) (User, error) {
 }
 
 func (db *DB) findUserByEmail(email string) (User, bool) {
-	dbStruct, err := db.loadDB()
+	dbStruct, err := db.load()
 	if err != nil {
 		return User{}, false
 	}

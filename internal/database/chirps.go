@@ -12,7 +12,7 @@ type Chirp struct{
 }
 
 func (db *DB) CreateChirp(chirp string, id int) (Chirp, error) {
-	dbStructure, err := db.loadDB()
+	dbStructure, err := db.load()
 	if err != nil {
 		return Chirp{}, err
 	}
@@ -31,7 +31,7 @@ func (db *DB) CreateChirp(chirp string, id int) (Chirp, error) {
 }
 
 func (db *DB) GetChirp(id int) (Chirp, error) {
-	dbStructure, err := db.loadDB()
+	dbStructure, err := db.load()
 	if err != nil {
 		return Chirp{}, err
 	}
@@ -45,7 +45,7 @@ func (db *DB) GetChirp(id int) (Chirp, error) {
 }
 
 func (db *DB) ListChirps() ([]Chirp, error) {
-	dbStructure, err := db.loadDB()
+	dbStructure, err := db.load()
 	if err != nil {
 		return []Chirp{}, err
 	}
@@ -56,4 +56,27 @@ func (db *DB) ListChirps() ([]Chirp, error) {
 	}
 
 	return chirps, nil
+}
+
+func (db *DB) DeleteChirp(authorId, chirpId int) error {
+	dbStructure, err := db.load()
+	if err != nil {
+		return err
+	}
+
+	chirpToDelete, ok := dbStructure.Chirps[chirpId]
+	if !ok {
+		err := errors.New("chirp not found")
+		log.Println(err)
+		return err
+	}
+
+	if chirpToDelete.AuthorID != authorId {
+		err := errors.New("author id does not match")
+		log.Println(err)
+		return err
+	}
+
+	delete(dbStructure.Chirps, chirpId)
+	return nil
 }
