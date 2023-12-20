@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"internal/auth"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -17,17 +17,15 @@ type userUpdateResponse struct{
 }
 
 func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request) {
-	token, err := cfg.validateUser(w, r)
+	token, err := cfg.authenticateUser(w, r)
 	if err != nil {
-		return
-	}
-	if token == nil {
+		// error is already logged and written to the response
 		return
 	}
 
 	userId, err := token.Claims.GetSubject()
 	if err != nil {
-		log.Println("could not get Subject from token")
+		log.Println("could not get subject from token")
 		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -68,35 +66,28 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	log.Println("user data updated")
 	writeJSON(w, data, http.StatusOK)
 }
 
-func (cfg *apiConfig) validateUser(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
-	reqToken := r.Header.Get("Authorization")
-	if len(reqToken) == 0 {
-		err := errors.New("no auth header included in request")
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-
-	strippedToken := reqToken[strings.Index(reqToken, " ")+1:]
-	if strippedToken == "" {
-		err := errors.New("malformed authorization header")
-		writeError(w, err, http.StatusUnauthorized)
-		return nil, err
-	}
-
-	claims := jwt.RegisteredClaims{}
-	
-	parsedToken, err := jwt.ParseWithClaims(strippedToken, &claims, func(token *jwt.Token) (interface{}, error) {return []byte(cfg.jwtSecret), nil})
+func (cfg *apiConfig) authenticateUser(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
+	authString, err := auth.GetAuthString(r)
 	if err != nil {
-		log.Printf("%s: %s", err.Error(), strippedToken)
+		log.Println(err)
+		writeError(w, err, http.StatusUnauthorized)
+		return nil, err
+	}
+
+	parsedToken, err := auth.ParseToken(authString, cfg.jwtSecret)
+	if err != nil {
+		log.Println(err)
 		writeError(w, err, http.StatusUnauthorized)
 		return nil, err
 	}
 
 	tokenType, err := parsedToken.Claims.GetIssuer()
 	if err != nil {
+		log.Println(err)
 		writeError(w, err, http.StatusInternalServerError)
 		return nil, err
 	}

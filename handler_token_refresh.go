@@ -3,35 +3,28 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"internal/auth"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type tokenResponse struct{
 	Token string `json:"token"`
 }
 
-func (cfg *apiConfig) handlerRefreshToken(w http.ResponseWriter, r *http.Request) {
-	authHeader := strings.Split(r.Header.Get("Authorization"), "")
-	if len(authHeader) < 2 {
-		err := errors.New("malformed auth header")
+func (cfg *apiConfig) handlerTokenRefresh(w http.ResponseWriter, r *http.Request) {
+	authString, err := auth.GetAuthString(r) 
+	if err != nil {		
 		log.Println(err)
 		writeError(w, err, http.StatusUnauthorized)
 		return
 	}
 
-	tokenStr := authHeader[1]
-	claims := jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) { return []byte(cfg.jwtSecret), nil})
+	token, err := auth.ParseToken(authString, cfg.jwtSecret)
 	if err != nil {
 		log.Println(err)
 		writeError(w, err, http.StatusUnauthorized)
-		return
 	}
 
 	issuer, err := token.Claims.GetIssuer()
@@ -54,13 +47,12 @@ func (cfg *apiConfig) handlerRefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tokenIsRevoked, err := cfg.db.CheckTokenStatus(tokenStr)
+	tokenIsRevoked, err := cfg.db.CheckTokenStatus(authString)
 	if err != nil {
 		log.Println(err)
 		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
-
 	if tokenIsRevoked {
 		err := errors.New("token is revoked")
 		log.Println(err)
@@ -82,8 +74,11 @@ func (cfg *apiConfig) handlerRefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	expiration := time.Hour * time.Duration(24 * 60)
-	newToken := cfg.generateJwt(id, expiration, "chirpy-refresh")
+	newToken, err := auth.GenerateJwt(id, nil, "chirpy-access")
+	if err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
 
 	newTokenStr, err := newToken.SignedString([]byte(cfg.jwtSecret))
 	if err != nil {

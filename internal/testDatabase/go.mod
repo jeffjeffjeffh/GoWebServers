@@ -1,3 +1,0 @@
-module testDatabase
-
-go 1.21.3

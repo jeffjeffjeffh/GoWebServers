@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"internal/testDatabase"
+	"internal/database"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +13,7 @@ import (
 
 type apiConfig struct {
 	hits int
-	db *testDatabase.DB
+	db *database.DB
 	jwtSecret string
 }
 
@@ -34,13 +34,13 @@ func main() {
 	flag.Parse()
 
 	if *debugDB {
-		db, err := testDatabase.CreateDB(DB_FILE)
+		db, err := database.CreateDB(DB_FILE)
 		if err != nil {
 			log.Fatal(err)
 		}
 		apiCfg.db = db
 	} else {
-		db, err := testDatabase.LoadDB(DB_FILE)
+		db, err := database.LoadDB(DB_FILE)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -52,26 +52,24 @@ func main() {
 	router.Handle("/app", fsHandler)
 	router.Handle("/app/*", fsHandler)
 
-	apiRouter := chi.NewRouter()
+	adminRouter := chi.NewRouter()
+	adminRouter.Get("/metrics", apiCfg.handlerAdminGetMetrics)
+	router.Mount("/admin", adminRouter)
 
+	apiRouter := chi.NewRouter()
 	apiRouter.Get("/chirps", apiCfg.handlerChirpsList)
 	apiRouter.Get("/chirps/{id}", apiCfg.handlerChirpsGet)
 	apiRouter.Get("/healthz", handlerHealthz)
 	apiRouter.Get("/metrics", apiCfg.handlerGetMetrics)
 	apiRouter.Get("/reset", apiCfg.handlerResetMetrics)
-
 	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
 	apiRouter.Post("/login", apiCfg.handlerLogin)
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
+	apiRouter.Post("/refresh", apiCfg.handlerTokenRefresh)
+	apiRouter.Post("/revoke", apiCfg.handlerTokenRevoke)
 	apiRouter.Put("/users", apiCfg.handlerUsersUpdate)
-	
-	apiRouter.Post("/refresh", apiCfg.handlerRefreshToken)
-	
 	router.Mount("/api", apiRouter)
 
-	adminRouter := chi.NewRouter()
-	adminRouter.Get("/metrics", apiCfg.handlerAdminGetMetrics)
-	router.Mount("/admin", adminRouter)
 
 	corsRouter := corsWrapper(router)
 	server := &http.Server{

@@ -1,8 +1,9 @@
-package testDatabase
+package database
 
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -14,9 +15,9 @@ type DB struct {
 }
 
 type DBstructure struct {
-	Chirps map[int]Chirp
-	Users map[int]User
-	Tokens map[string]time.Time
+	Chirps map[int]Chirp `json:"chirps"`
+	Users map[int]User `json:"users"`
+	RevokedTokens map[string]time.Time `json:"revokedTokens"`
 }
 
 func newDB(filename string) *DB {
@@ -30,6 +31,7 @@ func newDBstructure() DBstructure {
 	return DBstructure{
 		Chirps: map[int]Chirp{},
 		Users: map[int]User{},
+		RevokedTokens: map[string]time.Time{},
 	}
 }
 
@@ -56,11 +58,13 @@ func (db *DB) writeDB(dbStructure DBstructure) error {
 
 	data, err := json.Marshal(dbStructure)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	err = os.WriteFile(db.path, data, 0600)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -74,12 +78,14 @@ func (db *DB) loadDB() (DBstructure, error) {
 	
 	data, err := os.ReadFile(db.path)
 	if err != nil {
+		log.Println(err)
 		return DBstructure{}, err
 	}
 	
 	dbStructure := DBstructure{}
 	err = json.Unmarshal(data, &dbStructure)
 	if err != nil {
+		log.Println(err)
 		return DBstructure{}, err
 	}
 
@@ -92,10 +98,32 @@ func (db *DB) CheckTokenStatus(tokenStr string) (bool, error) {
 		return false, err
 	}
 
-	_, ok := dbStructure.Tokens[tokenStr]
+	_, ok := dbStructure.RevokedTokens[tokenStr]
 	if ok {
 		return true, nil
 	}
 
 	return false, nil
+}
+
+func (db *DB) RevokeToken(tokenString string) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	_, ok := dbStructure.RevokedTokens[tokenString]
+	if ok {
+		err := errors.New("token already revoked")
+		log.Println(err)
+		return err
+	}
+
+	dbStructure.RevokedTokens[tokenString] = time.Now()
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

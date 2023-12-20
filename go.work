@@ -1,4 +1,5 @@
 go 1.21.4
 
 use .
-use ./internal/testDatabase
+use ./internal/database
+use ./internal/auth

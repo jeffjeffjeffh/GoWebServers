@@ -1,4 +1,4 @@
-package testDatabase
+package database
 
 import "errors"
 
