@@ -1,17 +1,20 @@
 package main
 
 import (
+	"auth"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 )
 
 type Chirp struct{
-	ID int `json:"id"`
+	AuthorID int `json:"author_id"`
 	Body string `json:"body"`
+	ID int `json:"id"`
 }
 
 type returnErrorVals struct{
@@ -43,7 +46,39 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 
 	cleanedChirp := cleanChirp(*params.Body)
 
-	createdChirp, err := cfg.db.CreateChirp(cleanedChirp)
+	token, err := auth.GetTokenFromRequest(r, cfg.jwtSecret)
+	if err != nil {
+		if err.Error() == "malformed auth header" {
+			writeError(w, err, http.StatusBadRequest)
+		} else {
+			writeError(w, err, http.StatusUnauthorized)		
+		}
+		return
+	}
+
+	tokenIsValid := token.Valid
+	if !tokenIsValid {
+		err := errors.New("token expired or invalid")
+		log.Println(err)
+		writeError(w, err, http.StatusUnauthorized)
+		return
+	}
+
+	idString, err := token.Claims.GetSubject()
+	if err != nil {
+		log.Println(err)
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		log.Println(err)
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	createdChirp, err := cfg.db.CreateChirp(cleanedChirp, id)
 	if err != nil {
 		writeError(w, err, http.StatusInternalServerError)
 		return
@@ -54,7 +89,6 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		writeError(w, err, http.StatusInternalServerError)
 	}
 
-	fmt.Println("chirp created, sending response!")
 	writeJSON(w, data, http.StatusCreated)
 }
 

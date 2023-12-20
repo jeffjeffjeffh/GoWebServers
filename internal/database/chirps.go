@@ -1,13 +1,17 @@
 package database
 
-import "errors"
+import (
+	"errors"
+	"log"
+)
 
-type Chirp struct {
-	ID   int    `json:"id"`
+type Chirp struct{
+	AuthorID int `json:"author_id"`
 	Body string `json:"body"`
+	ID   int    `json:"id"`
 }
 
-func (db *DB) CreateChirp(chirp string) (Chirp, error) {
+func (db *DB) CreateChirp(chirp string, id int) (Chirp, error) {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return Chirp{}, err
@@ -17,10 +21,12 @@ func (db *DB) CreateChirp(chirp string) (Chirp, error) {
 	newChirp := Chirp{
 		Body: chirp,
 		ID:   newId,
+		AuthorID: id,
 	}
 
 	dbStructure.Chirps[newId] = newChirp
 
+	log.Println("chirp created")
 	return newChirp, db.writeDB(dbStructure)
 }
 
