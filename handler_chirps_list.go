@@ -23,7 +23,9 @@ func (cfg *apiConfig) handlerChirpsList(w http.ResponseWriter, r *http.Request) 
 		authorId = nil
 	}
 
-	chirps, err := cfg.db.ListChirps(authorId)
+	sortStr := r.URL.Query().Get("sort")
+
+	chirps, err := cfg.db.ListChirps(authorId, sortStr)
 	if err != nil {
 		log.Println(err)
 		writeError(w, err, http.StatusInternalServerError)

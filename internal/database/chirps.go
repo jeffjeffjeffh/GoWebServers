@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"log"
+	"slices"
 )
 
 type Chirp struct{
@@ -44,7 +45,7 @@ func (db *DB) GetChirp(id int) (Chirp, error) {
 	return chirp, nil
 }
 
-func (db *DB) ListChirps(authorId *int) ([]Chirp, error) {
+func (db *DB) ListChirps(authorId *int, sortMethod string) ([]Chirp, error) {
 	dbStruct, err := db.load()
 	if err != nil {
 		return []Chirp{}, err
@@ -64,7 +65,43 @@ func (db *DB) ListChirps(authorId *int) ([]Chirp, error) {
 		}
 	}
 
+	if sortMethod == "" {
+		log.Printf("returning unsorted chirps")
+		return chirps, nil
+	}
+
+	if sortMethod == "asc" {
+		slices.SortFunc(chirps, chirpSortAsc)
+	} else if sortMethod == "desc" {
+		slices.SortFunc(chirps, chirpSortDesc)
+	} else {
+		err := errors.New("invalid sort method")
+		log.Println(err)
+		return []Chirp{}, err
+	}
+
+	log.Printf("sorted chirps by %s", sortMethod)
 	return chirps, nil
+}
+
+func chirpSortAsc(a, b Chirp) int {
+	if a.ID > b.ID {
+		return 1
+	}
+	if a.ID < b.ID {
+		return -1
+	}
+	return 0
+}
+
+func chirpSortDesc(a, b Chirp) int {
+	if a.ID > b.ID {
+		return -1
+	}
+	if a.ID < b.ID {
+		return 1
+	}
+	return 0
 }
 
 func (db *DB) DeleteChirp(authorId, chirpId int) error {
