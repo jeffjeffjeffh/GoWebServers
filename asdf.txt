@@ -1,0 +1,10 @@
+Error: "failed test 3.2: expected map[
+    email:walt@breakingbad.com
+     id:1 
+     refresh_token:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHktcmVmcmVzaCIsInN1YiI6IjEiLCJleHAiOjE3MDgzNjc0ODIsImlhdCI6MTcwMzE4MzQ4Mn0.2MZcZ-IIUE0UQNT-QA9YBeAonhyk4ZO7flGi96cds6c 
+     token:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHktYWNjZXNzIiwic3ViIjoiMSIsImV4cCI6MTcwMzE4NzA4MiwiaWF0IjoxNzAzMTgzNDgyfQ.lymiJAsZtxm0w2eGz9l8mPgPjXnbFSwDTCqlUbpD6Ok
+     ] JSON body to contain map[
+        email:walt@breakingbad.com
+        id:1
+        is_chirpy_red:false
+        ], but it was not"

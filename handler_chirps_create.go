@@ -46,6 +46,10 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 	cleanedChirp := cleanChirp(*params.Body)
 
 	token, _, err := authenticateUser(r, "chirpy-access", cfg.jwtSecret)
+	if err != nil {
+		writeError(w, err, http.StatusUnauthorized)
+		return
+	}
 
 	idString, err := token.Claims.GetSubject()
 	if err != nil {

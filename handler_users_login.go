@@ -10,6 +10,7 @@ import (
 type userLoginResponse struct{
 	Email string `json:"email"`
 	ID int `json:"id"`
+	ChirpyRed bool `json:"is_chirpy_red"`
 	Token string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }
@@ -68,6 +69,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	userResp := userLoginResponse{
 		Email: user.Email,
 		ID: user.ID,
+		ChirpyRed: user.ChirpyRed,
 		Token: signedToken,
 		RefreshToken: signedRefreshToken,
 	}

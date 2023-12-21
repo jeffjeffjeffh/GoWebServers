@@ -67,6 +67,7 @@ func main() {
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
 	apiRouter.Post("/refresh", apiCfg.handlerTokenRefresh)
 	apiRouter.Post("/revoke", apiCfg.handlerTokenRevoke)
+	apiRouter.Post("/polka/webhooks", apiCfg.handlerWebhooks)
 	apiRouter.Put("/users", apiCfg.handlerUsersUpdate)
 	apiRouter.Delete("/chirps/{id}", apiCfg.handlerChirpsDelete)
 	router.Mount("/api", apiRouter)

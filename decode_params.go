@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -29,6 +30,7 @@ type userParams struct{
 	Email *string `json:"email"`
 	Password *string `json:"password"`
 	Expiration *int `json:"expires_in_seconds"`
+	ChirpyRed *bool `json:"chirpy_red"`
 }
 
 func decodeUserParams(r *http.Request) (userParams, error) {
@@ -36,15 +38,47 @@ func decodeUserParams(r *http.Request) (userParams, error) {
 	decoder := json.NewDecoder(r.Body)
 	
 	err := decoder.Decode(&params)
+	if err != nil {
+		log.Println(err)
+		return userParams{}, err
+	}
 	if params.Email == nil {
-		return userParams{}, errors.New("invalid POST request; no user email found")
+		err := errors.New("invalid POST request; no user email found")
+		log.Println(err)
+		return userParams{}, err
 	}
 	if params.Password == nil {
-		return userParams{}, errors.New("invalid POST request; no user password found")
-	}
-	if err != nil {
+		err := errors.New("invalid POST request; no user password found")
+		log.Println(err)
 		return userParams{}, err
 	}
 
-	return params, err
+	return params, nil
+}
+
+type webhookParams struct{
+	Event *string `json:"event"`
+	Data *struct{
+		UserID *int `json:"user_id"`
+	} `json:"data"`
+}
+
+func decodeWebhooksParams(r *http.Request) (webhookParams, error) {
+	log.Println("decoding webhook params...")
+
+	hook := webhookParams{}
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&hook)
+	if err != nil {
+		log.Println(err)
+		return webhookParams{}, err
+	}
+	if hook.Event == nil || hook.Data == nil || hook.Data.UserID == nil {
+		err := errors.New("malformed hook")
+		log.Println(err)
+		return webhookParams{}, err
+	}
+
+	return hook, nil
 }

@@ -9,6 +9,7 @@ import (
 type userResponse struct{
 	Email string `json:"email"`
 	ID int `json:"id"`
+	ChirpyRed bool `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,7 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 	userResp := userResponse{
 		createdUser.Email,
 		createdUser.ID,
+		createdUser.ChirpyRed,
 	}
 
 	data, err := json.Marshal(userResp)
